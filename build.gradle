@@ -1,0 +1,71 @@
+plugins {
+    id 'groovy'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'sk.adr3ez'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+
+    maven {
+        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+
+        // As of Gradle 5.1, you can limit this to only those
+        // dependencies you expect from it
+        content {
+            includeGroup 'org.bukkit'
+            includeGroup 'org.spigotmc'
+        }
+    }
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url = 'https://oss.sonatype.org/content/repositories/central' }
+
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot:1.20.4-R0.1-SNAPSHOT'
+    compileOnly 'org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT'
+
+    compileOnly 'org.projectlombok:lombok:1.18.26'
+    annotationProcessor 'org.projectlombok:lombok:1.18.26'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.26'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.26'
+
+    implementation group: 'org.jetbrains', name: 'annotations', version: '24.1.0'
+    annotationProcessor group: 'org.jetbrains', name: 'annotations', version: '24.1.0'
+}
+
+tasks.processResources {
+    def props = [version: rootProject.version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveFileName.set("ArmCore-${rootProject.version}.jar")
+
+    dependencies {
+        include "dev.dejvokep.boostedyaml"
+    }
+
+    relocate 'dev.dejvokep.boostedyaml', 'armcore.libs.boostedyaml'
+}
+
+artifacts {
+    archives shadowJar
+}
