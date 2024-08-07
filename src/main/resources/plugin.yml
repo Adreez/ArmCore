@@ -1,0 +1,4 @@
+main: sk.adr3ez.armcore.Main
+name: ArmCore
+version: '${version}'
+author: Adr3ez_
