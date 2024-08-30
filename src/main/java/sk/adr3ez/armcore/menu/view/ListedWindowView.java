@@ -11,7 +11,7 @@ import java.util.List;
 public class ListedWindowView<T extends MenuButton> extends WindowView {
 
 
-    private Collection<T> items = new ArrayList<>();
+    private final Collection<T> items = new ArrayList<>();
     @Getter
     private Integer currentPage = 1;
 

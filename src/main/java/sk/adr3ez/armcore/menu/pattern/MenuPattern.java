@@ -15,7 +15,7 @@ public class MenuPattern {
 	private final HashMap<Integer, Character> elements = new HashMap<>();
 	private final HashMap<Character, List<Integer>> charSlots = new HashMap<>();
 	private final Map<Character, WindowView> charToView = new HashMap<>();
-	private List<String> rawLines = new ArrayList<>();
+	private final List<String> rawLines = new ArrayList<>();
 	
 	public MenuPattern() {
 	}
@@ -48,7 +48,7 @@ public class MenuPattern {
 	}
 	
 	@ApiStatus.Internal
-	public void init() throws IllegalStateException {
+	public final void init() throws IllegalStateException {
 		if (rawLines.isEmpty())
 			throw new IllegalStateException("No lines were added to the pattern");
 		// Initialize menu instance logic here
