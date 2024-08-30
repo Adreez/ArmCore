@@ -1,4 +1,5 @@
-main: sk.adr3ez.armcore.Main
+main: sk.adr3ez.armcore.SpigotMain
 name: ArmCore
+api-version: 1.13
 version: '${version}'
 author: Adr3ez_

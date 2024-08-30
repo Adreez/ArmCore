@@ -1,40 +1,41 @@
 package sk.adr3ez.armcore.menu;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sk.adr3ez.armcore.api.ArmCore;
-import sk.adr3ez.armcore.menu.requirement.MenuRequirement;
+import sk.adr3ez.armcore.menu.button.MenuButton;
+import sk.adr3ez.armcore.menu.option.MenuOption;
+import sk.adr3ez.armcore.menu.option.OptionsService;
+import sk.adr3ez.armcore.menu.view.WindowView;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-public class Menu {
+public abstract class Menu {
 
     private static final String METADATA_VALUE = "ArmCoreMenu";
-
-    private final String title;
-    private final int slots;
-    private final List<MenuButton> buttons;
-    private final Collection<MenuRequirement<?>> menuRequirements;
+	@Getter
+	private final OptionsService options = new OptionsService(this);
+	
+    private final Set<BukkitTask> scheduledTasks = new HashSet<>();
+	private final Collection<WindowView> windows = new ArrayList<>();
+    @Setter
+    @Getter
+    private String title = "Default Title";
+    @Nullable
     private Player player;
-    private Set<BukkitTask> schedulerTasks;
 
-    public Menu(@NotNull String title,
-                @NotNull Integer rows,
-                @Nullable List<MenuButton> buttons,
-                @Nullable Set<BukkitTask> schedulerTasks, Collection<MenuRequirement<?>> menuRequirements) {
-        this.title = title;
-        this.slots = rows * 9;
-        this.buttons = buttons;
-        this.schedulerTasks = schedulerTasks;
-        this.menuRequirements = menuRequirements;
+
+    public Menu() {
     }
 
     @Nullable
@@ -45,24 +46,71 @@ public class Menu {
             return null;
     }
 
+    public void addTask(BukkitTask... tasks) {
+        scheduledTasks.addAll(List.of(tasks));
+    }
+    public void addOption(MenuOption... options) {
+        this.options.addOption(options);
+    }
+
+    protected abstract Inventory createInventory();
+
     public Inventory getInventory() {
+        if (this.player == null)
+            throw new IllegalStateException("Trying to get an inventory before menu was opened!");
         return this.player.getOpenInventory().getTopInventory();
     }
 
+    public Inventory getBottomInventory() {
+        if (this.player == null)
+            throw new IllegalStateException("Trying to get an inventory before menu was opened!");
+        //TODO Check if menuOption to use bottom inv is there
+        return this.player.getOpenInventory().getBottomInventory();
+    }
+	
+	public void performClick(Player player, InventoryClickEvent event) {
+		
+		int slot = event.getSlot();
+		for (WindowView window : windows) {
+			if (window.getSlots().contains(slot)) {
+				MenuButton.ClickAction action = window.getButton(slot).getClickAction();
+				if (action != null)
+					action.click(player, event, this);
+				break;
+			}
+		}
+	}
+	
+	public void addWindow(WindowView window) {
+		Bukkit.getLogger().info("Window added: " + window.getSlots()); // TODO DEBUG
+		windows.add(window);
+	}
+	
+	public void update() {
+		for (WindowView window : windows) {
+			window.update();
+		}
+	}
+
     @ApiStatus.Internal
-    private void handleClose() {
+    public void handleClose() {
         //todo actions on close
-
-        //TODO Check if inventory can be closed else cancel
-        //TODO Call custom event
-
-        player.removeMetadata(METADATA_VALUE, ArmCore.INSTANCE.get().getJavaPlugin());
-        player.closeInventory();
-        for (BukkitTask task : schedulerTasks) {
-            task.cancel();
-        }
+        
+	    
+	    Bukkit.getLogger().info("handleClose"); // TODO DEBUG
+        Objects.requireNonNull(player).removeMetadata(METADATA_VALUE, ArmCore.INSTANCE.get().getJavaPlugin());
+		
+        scheduledTasks.forEach(BukkitTask::cancel);
+        this.options.onClose();
     }
 
+    /**
+     * This method will set metadata for a {@link org.bukkit.entity.Player} to stop duplication bugs,
+     * creates {@link org.bukkit.inventory.Inventory}, sets {@link sk.adr3ez.armcore.menu.button.MenuButton}s
+     * and finally opens a menu to a {@link org.bukkit.entity.Player}.
+     *
+     * @param player {@link org.bukkit.entity.Player} for which will be menu opened
+     */
     public final void open(Player player) {
         this.player = player;
 
@@ -70,10 +118,25 @@ public class Menu {
         player.setMetadata(METADATA_VALUE, new FixedMetadataValue(ArmCore.INSTANCE.get().getJavaPlugin(), Menu.this));
 
         //todo Register buttons
-        Inventory inv = Bukkit.createInventory(this.player, slots, title);
-        //todo setcontents for inventory
-        // inv.setContents(List.of(new ItemStack(Material.ACACIA_FENCE)).toArray(new ItemStack[0]));
-
+        Inventory inv = createInventory();
+		
+		this.update();
+		
+	    ItemStack[] content = new ItemStack[inv.getSize()];
+	    
+		Bukkit.getLogger().info("Windows: " + windows);
+	    for (WindowView window : windows) {
+			Bukkit.getLogger().info("Window buttons: " + window.getButtonHandler().getButtons()); //TODO DEBUG
+			Bukkit.getLogger().info("Window slots: " + window.getSlots());
+		    for (Map.Entry<Integer, MenuButton> map : window.getButtonHandler().getButtons().entrySet()) {
+				int slot = map.getKey();
+				ItemStack item = map.getValue().getItemStack();
+			    if (slot <= content.length)
+				    content[slot] = item;
+		    }
+	    }
+		Bukkit.getLogger().info("Content: " + Arrays.toString(content));
+		inv.setContents(content);
         player.openInventory(inv);
 
         //todo PostDisplayConsumer???
