@@ -40,6 +40,10 @@ public final class OptionsService {
 		options.removeIf(optionItem -> option.equals(optionItem.getClass()));
 	}
 	
+	public boolean contains(Class<? extends MenuOption> option) {
+		return options.stream().anyMatch(optionItem -> option.equals(optionItem.getClass()));
+	}
+	
 	public void onClose(){
 		options.forEach(MenuOption::onClose);
 	}

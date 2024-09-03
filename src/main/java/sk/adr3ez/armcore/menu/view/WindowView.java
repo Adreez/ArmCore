@@ -6,7 +6,6 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import sk.adr3ez.armcore.menu.Menu;
 import sk.adr3ez.armcore.menu.button.ButtonHandler;
 import sk.adr3ez.armcore.menu.button.MenuButton;
 import sk.adr3ez.armcore.menu.util.Range;
@@ -20,7 +19,6 @@ import java.util.List;
 public class WindowView {
 
 	private final ButtonHandler buttonHandler = new ButtonHandler(this);
-	protected Menu menu;
 	@Setter
     private Collection<Integer> slots = new ArrayList<>();
 
