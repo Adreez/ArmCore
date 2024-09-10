@@ -20,8 +20,8 @@ public class ButtonHandler {
 		this.window = windowView;
 	}
 	
-	public void addButton(int slot, MenuButton button) {
-		this.buttons.put(slot, button);
+	public void addButton(int slot, MenuButton menuButton) {
+		this.buttons.put(slot, menuButton);
 	}
 	
 }

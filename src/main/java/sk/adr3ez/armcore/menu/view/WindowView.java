@@ -5,7 +5,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import sk.adr3ez.armcore.menu.Menu;
 import sk.adr3ez.armcore.menu.button.ButtonHandler;
 import sk.adr3ez.armcore.menu.button.MenuButton;
 import sk.adr3ez.armcore.menu.util.Range;
@@ -44,33 +48,38 @@ public class WindowView {
         return buttonHandler.getButtons().get(slot);
     }
 
-    public WindowView addButton(int slot, MenuButton button) {
-        this.buttonHandler.addButton(slot, button);
+    public WindowView addButton(int slot, MenuButton menuButton) {
+        this.buttonHandler.addButton(slot, menuButton);
 	    return this;
     }
 	
 	/**
 	 * Add button at next free slot
-	 * @param button button to add
+	 * @param menuButton button to add
 	 * @return this
 	 */
-	public WindowView addButton(MenuButton button) {
+	public WindowView addButton(MenuButton menuButton) {
 		int slot = this.getFreeSlot();
 		if (slot != -1)
-			this.buttonHandler.addButton(slot, button);
+			this.buttonHandler.addButton(slot, menuButton);
 		return this;
 	}
 	
 	public WindowView fill(Material material) {
-		for (Integer slot : slots) {
-			buttonHandler.addButton(slot, new MenuButton(new ItemStack(material)));
-		}
+		this.fill(new ItemStack(material));
 		return this;
 	}
 	
-	public WindowView fill(ItemStack item) {
+	public WindowView fill(ItemStack itemStack) {
 		for (Integer slot : slots) {
-			buttonHandler.addButton(slot, new MenuButton(item));
+			buttonHandler.addButton(slot, new MenuButton() {
+				@Override
+				public void onClick(@NotNull Player player, @NotNull InventoryClickEvent clickEvent, @NotNull Menu clickedMenu) {}
+				@Override
+				public ItemStack getItemStack() {
+					return itemStack;
+				}
+			});
 		}
 		return this;
 	}

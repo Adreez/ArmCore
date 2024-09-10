@@ -8,7 +8,7 @@ import sk.adr3ez.armcore.menu.pattern.MenuPattern;
 
 @Setter
 @Getter
-public final class ChestMenu extends Menu {
+public class ChestMenu extends Menu {
 
     private int rows = 3;
 
@@ -38,7 +38,12 @@ public final class ChestMenu extends Menu {
 
     @Override
     protected Inventory createInventory() {
-	    return Bukkit.createInventory(null, rows*9, this.getTitle());
+		int size = rows * 9;
+	    if (size < 9)
+	        size = 9;
+		if (size > 54)
+			size = 54;
+	    return Bukkit.createInventory(null, size, this.getTitle());
     }
 
 }

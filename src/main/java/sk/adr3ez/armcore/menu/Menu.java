@@ -2,6 +2,7 @@ package sk.adr3ez.armcore.menu;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -14,12 +15,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sk.adr3ez.armcore.api.ArmCore;
 import sk.adr3ez.armcore.menu.button.MenuButton;
+import sk.adr3ez.armcore.menu.button.annotation.Button;
 import sk.adr3ez.armcore.menu.option.MenuOption;
 import sk.adr3ez.armcore.menu.option.OptionsService;
 import sk.adr3ez.armcore.menu.option.list.BottomInventoryOption;
 import sk.adr3ez.armcore.menu.view.WindowView;
 import sk.adr3ez.armcore.menu.view.manager.ViewFactory;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 public abstract class Menu {
@@ -81,26 +84,31 @@ public abstract class Menu {
 		int slot = event.getSlot();
 		for (WindowView window : viewFactory.getWindows()) {
 			if (window.getSlots().contains(slot)) {
-				MenuButton.ClickAction action = window.getButton(slot).getClickAction();
-				if (action != null)
-					action.click(player, event, this);
-				break;
+				MenuButton menuButton = window.getButton(slot);
+				if (menuButton != null) {
+					menuButton.onClick(player, event, this);
+					break;
+				}
 			}
 		}
 	}
 	
-	public void setButton(int slot, MenuButton button) {
+	public void setButton(int slot, MenuButton menuButton) {
 		//TODO Check if slot is used in window
 		// if yes, set button to window else add button to default window
 		for (WindowView window : viewFactory.getWindows()) {
 			if (window.getSlots().contains(slot)) {
-				window.getButtonHandler().addButton(slot, button);
+				window.getButtonHandler().addButton(slot, menuButton);
 				Bukkit.getLogger().info("Button added to window: " + window.getSlots()); // TODO DEBUG
 				return;
 			}
 		}
 		Bukkit.getLogger().info("Button added to default window because it was not added to any window: " + slot); // TODO DEBUG
-		viewFactory.getDefaultView().getButtonHandler().addButton(slot, button);
+		viewFactory.getDefaultView().getButtonHandler().addButton(slot, menuButton);
+	}
+	
+	public void addButton(MenuButton menuButton) {
+		viewFactory.getDefaultView().addButton(menuButton);
 	}
 	
 	public void addWindow(WindowView window) {
@@ -134,12 +142,8 @@ public abstract class Menu {
 		ItemStack[] content = new ItemStack[inventory.getSize()];
 		
 		Bukkit.getLogger().info("Windows: " + viewFactory.getWindows());
-		
-		List<WindowView> views = new ArrayList<>(viewFactory.getWindows());
-		views.add(viewFactory.getDefaultView());
-		
 		//For each window get buttons and set them to content which will be returned
-		for (WindowView window : views) {
+		for (WindowView window : viewFactory.getWindows()) {
 			Bukkit.getLogger().info("Window buttons: " + window.getButtonHandler().getButtons()); //TODO DEBUG
 			Bukkit.getLogger().info("Window slots: " + window.getSlots());
 			for (Map.Entry<Integer, MenuButton> map : window.getButtonHandler().getButtons().entrySet()) {
@@ -169,7 +173,7 @@ public abstract class Menu {
 	
 	/**
 	 * This method will set metadata for a {@link org.bukkit.entity.Player} to stop duplication bugs,
-	 * creates {@link org.bukkit.inventory.Inventory}, sets {@link sk.adr3ez.armcore.menu.button.MenuButton}s
+	 * creates {@link org.bukkit.inventory.Inventory}, sets {@link MenuButton}s
 	 * and finally opens a menu to a {@link org.bukkit.entity.Player}.
 	 *
 	 * @param player {@link org.bukkit.entity.Player} for which will be menu opened
@@ -196,10 +200,55 @@ public abstract class Menu {
 		}
 		viewFactory.getDefaultView().setSlots(freeSlots);
 		
+		this.performAnnotationCheck();
+		
 		inventory.setContents(getContent());
 		player.openInventory(inventory);
 		
 		//todo PostDisplayConsumer???
+	}
+	
+	@SneakyThrows
+	private void performAnnotationCheck() {
+		// Check for field annotations
+		Field[] fields = this.getClass().getDeclaredFields();
+		for (Field field : fields) {
+			field.setAccessible(true);
+			if (field.isAnnotationPresent(Button.class)) {
+				Button buttonAnnotation = field.getAnnotation(Button.class);
+				if (MenuButton.class.isAssignableFrom(field.getType())) {
+					
+					MenuButton menuButton = (MenuButton) field.get(this);
+					Button annotation = field.getAnnotation(Button.class);
+					
+					ArmCore.INSTANCE.get().getPluginLogger().info(" annotationCheck - check if row and value are default"); // TODO DEBUG
+					if (annotation.row() == 1 && annotation.value() == 0 && annotation.snapPosition() == Button.SnapPosition.LEFT) {
+						addButton(menuButton);
+						return;
+					}
+					
+					ArmCore.INSTANCE.get().getPluginLogger().info("annotationCheck - set specific slot for button"); // TODO DEBUG
+					//Set specific slot for button
+					int row = annotation.row();
+					int rows = getInventory().getSize() / 9; //TODO Set to variable because it may change in future depending on menu type
+					if (row > rows) {
+						ArmCore.INSTANCE.get().getPluginLogger().warn("Row " + row + " is bigger than rows in inventory " + rows);
+						row = rows;
+					}
+					if (row < 0) {
+						ArmCore.INSTANCE.get().getPluginLogger().warn("Row " + row + " is smaller than 0");
+						row = 1;
+					}
+					
+					//Determine slot using snapPosition
+					setButton(switch (annotation.snapPosition()) {
+						case LEFT -> row * 9 + annotation.value();
+						case RIGHT -> row * 9 + 8 + annotation.value();
+						case CENTER -> row * 9 + 4;
+					}, menuButton);
+				}
+			}
+		}
 	}
 	
 }

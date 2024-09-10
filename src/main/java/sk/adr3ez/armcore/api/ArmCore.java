@@ -1,14 +1,24 @@
 package sk.adr3ez.armcore.api;
 
+import dev.dejvokep.boostedyaml.YamlDocument;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+import sk.adr3ez.armcore.api.util.PluginLogger;
 
 public interface ArmCore {
 
     //Methods
     JavaPlugin getJavaPlugin();
-
-    class INSTANCE {
+	
+	@NotNull
+	String getDataDirectory();
+	
+	YamlDocument getConfigFile();
+	
+	PluginLogger getPluginLogger();
+	
+	class INSTANCE {
 
         private static ArmCore instance;
 
