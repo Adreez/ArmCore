@@ -1,6 +1,7 @@
 package sk.adr3ez.armcore.menu;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
@@ -25,6 +26,7 @@ import sk.adr3ez.armcore.menu.view.manager.ViewFactory;
 import java.lang.reflect.Field;
 import java.util.*;
 
+@NoArgsConstructor
 public abstract class Menu {
 	
 	private static final String METADATA_VALUE = "ArmCoreMenu";
@@ -42,9 +44,9 @@ public abstract class Menu {
 	@Nullable
 	private Player player;
 	
+	//Prevent fast clicks
+	private Long lastClick = 0L;
 	
-	public Menu() {
-	}
 	
 	@Nullable
 	public static Menu get(@NotNull Player player) {
@@ -81,12 +83,15 @@ public abstract class Menu {
 	}
 	
 	public void performClick(Player player, InventoryClickEvent event) {
+		if (System.currentTimeMillis() - lastClick < 200)
+			return;
 		int slot = event.getSlot();
 		for (WindowView window : viewFactory.getWindows()) {
 			if (window.getSlots().contains(slot)) {
 				MenuButton menuButton = window.getButton(slot);
 				if (menuButton != null) {
 					menuButton.onClick(player, event, this);
+					this.lastClick = System.currentTimeMillis();
 					break;
 				}
 			}

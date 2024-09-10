@@ -37,6 +37,17 @@ public class TestMenu extends ChestMenu {
 		WindowView windowView = new WindowView(new Range(0,8));
 		windowView.fill(Material.BLACK_STAINED_GLASS_PANE);
 		addWindow(windowView);
+		setButton(1,new MenuButton() {
+			@Override
+			public void onClick(@NotNull Player player, @NotNull InventoryClickEvent clickEvent, @NotNull Menu clickedMenu) {
+				player.sendMessage("Clicked!");
+			}
+			
+			@Override
+			public ItemStack getItemStack() {
+				return new ItemStack(Material.BARRIER);
+			}
+		});
 		
 	}
 }
